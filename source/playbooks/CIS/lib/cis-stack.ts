@@ -107,6 +107,29 @@ export class CisStack extends cdk.Stack {
     cisPerms.addDependsOn(cis15111playbook.lambdaRole.node.findChild('Resource') as CfnRole)
 
     //---------------------------------------------------------------------
+    // CIS116
+    //
+    let cis116findings = [
+      "1.16 Ensure IAM policies are attached only to groups or roles",
+    ];
+
+    const cis116playbook: PlaybookConstruct = new PlaybookConstruct(this, 'cis116playbook', {
+      name: 'CIS116',
+      description: 'Remediates CIS 1.16 by adding the users to a group with relevant polices, removing policies attached to them.',
+      aws_region: this.region,
+      aws_partition: this.partition,
+      aws_accountid: this.account,
+      custom_action_name: 'CIS 1.16',
+      findings: cis116findings,
+      solutionId: props.solutionId,
+      solutionVersion: props.solutionVersion,
+      solutionName: props.solutionName,
+      distName: props.solutionDistName,
+      distBucket: props.solutionDistBucket
+    });
+    cisPerms.addDependsOn(cis116playbook.lambdaRole.node.findChild('Resource') as CfnRole)
+
+    //---------------------------------------------------------------------
     // CIS22
     //
     let cis22findings = [
