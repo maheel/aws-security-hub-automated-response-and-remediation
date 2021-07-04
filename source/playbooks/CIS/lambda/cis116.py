@@ -16,6 +16,7 @@
 
 import os
 import json
+import uuid
 from botocore.config import Config
 from lib.sechub_findings import Finding, notify
 from lib.logger import Logger
@@ -23,20 +24,19 @@ from lib.awsapi_helpers import AWSClient, BotoSession
 from lib.applogger import LogHandler
 from lib.metrics import Metrics
 
-#------------------------------
+# ------------------------------
 # Remediation-Specific
-#------------------------------
+# ------------------------------
 LAMBDA_ROLE = 'SO0111_CIS116_memberRole'
 REMEDIATION = 'Ensure IAM policies are attached only to groups or roles'
 AFFECTED_OBJECT = 'IAM User'
-#------------------------------
+# ------------------------------
 
 PLAYBOOK = os.path.basename(__file__[:-3])
 # initialise LOGGERs
 LOG_LEVEL = os.getenv('log_level', 'info')
 LOGGER = Logger(loglevel=LOG_LEVEL)
-APPLOGGER = LogHandler(PLAYBOOK) # application LOGGER for CW Logs
-
+APPLOGGER = LogHandler(PLAYBOOK)  # application LOGGER for CW Logs
 
 # Get AWS region from Lambda environment. If not present then we're not
 # running under lambda, so defaulting to us-east-1
@@ -53,11 +53,11 @@ BOTO_CONFIG = Config(
 )
 AWS = AWSClient(AWS_PARTITION, AWS_REGION)
 
-#------------------------------------------------------------------------------
-# HANDLER
-#------------------------------------------------------------------------------
-def lambda_handler(event, context):
 
+# ------------------------------------------------------------------------------
+# HANDLER
+# ------------------------------------------------------------------------------
+def lambda_handler(event, context):
     LOGGER.info(event)
     metrics = Metrics(event)
 
@@ -69,13 +69,13 @@ def lambda_handler(event, context):
     except Exception as e:
         LOGGER.error(e)
 
-    APPLOGGER.flush() # flush the buffer to CW Logs
+    APPLOGGER.flush()  # flush the buffer to CW Logs
 
-#------------------------------------------------------------------------------
+
+# ------------------------------------------------------------------------------
 # REMEDIATION
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 def remediate(finding, metrics_data):
-
     message = {
         'Note': '',
         'State': 'INFO',
@@ -109,7 +109,7 @@ def remediate(finding, metrics_data):
         APPLOGGER.add_message('CIS 1.16: incorrect custom action selection')
         return
 
-    #==========================================================================
+    # ==========================================================================
     message['AffectedObject'] = AFFECTED_OBJECT
     try:
         sess = BotoSession(finding.account_id, LAMBDA_ROLE)
@@ -125,7 +125,6 @@ def remediate(finding, metrics_data):
 
     try:
         details = finding.details['Resources'][0]['Details']
-        print(details)
 
         aws_iam_user = details['AwsIamUser']
         managed_policies = aws_iam_user['AttachedManagedPolicies'] if 'AttachedManagedPolicies' in aws_iam_user else []
@@ -133,11 +132,15 @@ def remediate(finding, metrics_data):
         user_groups = aws_iam_user['GroupList'] if 'GroupList' in aws_iam_user else []
         inline_policies = aws_iam_user['UserPolicyList'] if 'UserPolicyList' in aws_iam_user else []
 
-        group_name = f'{username}-sharr-cis116'
+        group_name = f'{username}'
 
         if user_groups:
             group_name = user_groups[0]
         else:
+            if does_group_exist(iam, group_name):
+                lowercase_str = uuid.uuid4().hex
+                group_name = f'{group_name}_{lowercase_str[0:8]}'
+
             iam.create_group(
                 GroupName=group_name
             )
@@ -190,15 +193,13 @@ def remediate(finding, metrics_data):
                         PolicyArn=policy_arn
                     )
 
-        response = iam.add_user_to_group(
+        iam.add_user_to_group(
             GroupName=group_name,
             UserName=username
         )
 
-        LOGGER.debug(response)
-
         message['State'] = 'RESOLVED'
-        message['Note'] = '' # use default
+        message['Note'] = ''  # use default
         notify(finding, message, LOGGER, cwlogs=APPLOGGER, sns=AWS)
         return
 
@@ -206,3 +207,32 @@ def remediate(finding, metrics_data):
         LOGGER.error(e)
         failed()
         return
+
+
+def does_group_exist(iam, group_name):
+    """Check if the group name exists.
+
+        Parameters
+        ----------
+        iam: iam client, required
+        group_name: string, required
+
+        Returns
+        ------
+            bool: returns if the group exists
+        """
+    group_exists = False
+
+    try:
+        response = iam.get_group(
+            GroupName=group_name
+        )
+
+        if 'Group' in response:
+            group_exists = True
+
+    except iam.exceptions.NoSuchEntityException as e:
+        group_exists = False
+        LOGGER.info(e)
+
+    return group_exists
