@@ -110,6 +110,20 @@ def remediate(finding, metrics_data):
         APPLOGGER.add_message('CIS 1.20: incorrect custom action selection')
         return
 
+    sg_type = str(finding.details['Resources'][0]['Type'])
+    if sg_type == 'AwsAccount':
+        # This code snippet is invoked when the user selects a finding with type as AwsAccount
+        # this finding in security hub is more referring to the account in general and doesn't provide
+        # information of the specific security group, once the specific security group errors are resolved
+        # this finding will be resolved as well, therefore there is no specific remediation for this finding.
+        LOGGER.debug('for security group finding type AwsAccount, there is no resolution.')
+        APPLOGGER.add_message('AwsAccount is a general finding for the entire account. Once the specific findings are resolved for resource type(s) other than AwsAccount, \
+             this will be marked as resolved.')
+        message['State'] = 'INITIAL'
+        message['Note'] = 'The finding is related to the AWS account.'
+        notify(finding, message, LOGGER, cwlogs=APPLOGGER)
+        return
+
     #==========================================================================
     message['AffectedObject'] = AFFECTED_OBJECT
     try:
@@ -196,7 +210,6 @@ def does_role_exist(iam, role_name):
         )
 
         if 'Role' in response:
-            print('Yes exists')
             role_exists = True
 
     except iam.exceptions.NoSuchEntityException as e:
