@@ -416,20 +416,58 @@ export class CisPermissionsStack extends cdk.Stack {
         }
     };
 
-    //CIS 3.1
-    const cis31 = new PolicyStatement();
-    cis31.addActions("ec2:UpdateSecurityGroupRuleDescriptionsEgress")
-    cis31.effect = Effect.ALLOW
-    cis31.addResources("arn:" + this.partition + ":ec2:*:"+this.account+":security-group/*");
+    //CIS 3.1 - 3.14
+    const cis31314cloudtrail1 = new PolicyStatement();
+    cis31314cloudtrail1.addActions("cloudtrail:ListTrails")
+    cis31314cloudtrail1.effect = Effect.ALLOW
+    cis31314cloudtrail1.addResources("*");
 
-    const cis31Policy = new PolicyDocument();
-    cis31Policy.addStatements(cis31)
+    const cis31314cloudtrail2 = new PolicyStatement();
+    cis31314cloudtrail2.addActions("cloudtrail:GetTrail")
+    cis31314cloudtrail2.effect = Effect.ALLOW
+    cis31314cloudtrail2.addResources(
+        "arn:" + this.partition + ":cloudtrail:*:" + this.account + ":trail/*"
+    );
 
-    new AssumeRoleConstruct(this, 'cis31assumerole', {
+    const cis31314sns1 = new PolicyStatement();
+    cis31314sns1.addActions("sns:CreateTopic")
+    cis31314sns1.effect = Effect.ALLOW
+    cis31314sns1.addResources("*");
+
+    const cis31314sns2 = new PolicyStatement();
+    cis31314sns2.addActions("sns:Subscribe")
+    cis31314sns2.effect = Effect.ALLOW
+    cis31314sns2.addResources(
+      "arn:" + this.partition + ":sns:*:" + this.account + ":*"
+    )
+
+    const cis31314logs = new PolicyStatement();
+    cis31314logs.addActions("logs:PutMetricFilter")
+    cis31314logs.effect = Effect.ALLOW
+    cis31314logs.addResources(
+      "arn:" + this.partition + ":logs:*:" + this.account + ":*"
+    )
+
+    const cis31314cw = new PolicyStatement();
+    cis31314cw.addActions("cloudwatch:PutMetricAlarm")
+    cis31314cw.effect = Effect.ALLOW
+    cis31314cw.addResources(
+      "arn:" + this.partition + ":cloudwatch:*:" + this.account + ":*"
+    )
+
+    const cis31314Policy = new PolicyDocument();
+    cis31314Policy.addStatements(cis31314cloudtrail1)
+    cis31314Policy.addStatements(cis31314cloudtrail2)
+    cis31314Policy.addStatements(cis31314sns1)
+    cis31314Policy.addStatements(cis31314sns2)
+    cis31314Policy.addStatements(cis31314logs)
+    cis31314Policy.addStatements(cis31314cw)
+
+    new AssumeRoleConstruct(this, 'cis31314assumerole', {
       adminAccountNumber: adminAccountNumber,
       solutionId: props.solutionId,
-      lambdaPolicy: cis31Policy,
-      lambdaHandlerName: 'CIS31',
+      lambdaPolicy: cis31314Policy,
+      lambdaHandlerName: 'CIS31314',
       region: this.region,
       aws_partition: this.partition
     });
