@@ -153,6 +153,29 @@ export class CisStack extends cdk.Stack {
     cisPerms.addDependsOn(cis120playbook.lambdaRole.node.findChild('Resource') as CfnRole)
 
     //---------------------------------------------------------------------
+    // CIS122
+    //
+    let cis122findings = [
+      "1.22 – Ensure IAM policies that allow full '*:*' administrative privileges are not created",
+    ];
+
+    const cis122playbook: PlaybookConstruct = new PlaybookConstruct(this, 'cis122playbook', {
+      name: 'CIS122',
+      description: 'Remediates CIS 1.22 by ensuring no IAM policies with administrative privileges',
+      aws_region: this.region,
+      aws_partition: this.partition,
+      aws_accountid: this.account,
+      custom_action_name: 'CIS 1.22',
+      findings: cis122findings,
+      solutionId: props.solutionId,
+      solutionVersion: props.solutionVersion,
+      solutionName: props.solutionName,
+      distName: props.solutionDistName,
+      distBucket: props.solutionDistBucket
+    });
+    cisPerms.addDependsOn(cis122playbook.lambdaRole.node.findChild('Resource') as CfnRole)
+
+    //---------------------------------------------------------------------
     // CIS22
     //
     let cis22findings = [
@@ -312,6 +335,43 @@ export class CisStack extends cdk.Stack {
         distBucket: props.solutionDistBucket
     });
     cisPerms.addDependsOn(cis29playbook.lambdaRole.node.findChild('Resource') as CfnRole)
+
+    //---------------------------------------------------------------------
+    // CIS31314
+    //
+    let cis31314findings = [
+      "3.1 Ensure a log metric filter and alarm exist for unauthorized API calls",
+      "3.2 Ensure a log metric filter and alarm exist for AWS Management Console sign-in without MFA",
+      "3.3 Ensure a log metric filter and alarm exist for usage of root account",
+      "3.4 Ensure a log metric filter and alarm exist for IAM policy changes",
+      "3.5 Ensure a log metric filter and alarm exist for CloudTrail configuration changes",
+      "3.6 Ensure a log metric filter and alarm exist for AWS Management Console authentication failures",
+      "3.7 Ensure a log metric filter and alarm exist for disabling or scheduled deletion of customer created CMKs",
+      "3.8 Ensure a log metric filter and alarm exist for S3 bucket policy changes",
+      "3.9 Ensure a log metric filter and alarm exist for AWS Config configuration changes",
+      "3.10 Ensure a log metric filter and alarm exist for security group changes ",
+      "3.11 Ensure a log metric filter and alarm exist for changes to Network Access Control Lists (NACL)",
+      "3.12 Ensure a log metric filter and alarm exist for changes to network gateways",
+      "3.13 Ensure a log metric filter and alarm exist for route table changes",
+      "3.14 Ensure a log metric filter and alarm exist for VPC changes",
+    ];
+
+    const cis31314playbook: PlaybookConstruct = new PlaybookConstruct(this, 'cis31314playbook', {
+      name: 'CIS31314',
+      description: 'Remediates CIS 3.1 - 3.14 creating a log metric filters and alarms.',
+      aws_region: this.region,
+      aws_partition: this.partition,
+      aws_accountid: this.account,
+      custom_action_name: 'CIS 3.1 - 3.14',
+      findings: cis31314findings,
+      solutionId: props.solutionId,
+      solutionVersion: props.solutionVersion,
+      solutionName: props.solutionName,
+      distName: props.solutionDistName,
+      distBucket: props.solutionDistBucket
+    });
+    cisPerms.addDependsOn(cis31314playbook.lambdaRole.node.findChild('Resource') as CfnRole)
+
 
     //---------------------------------------------------------------------
     // CIS4142

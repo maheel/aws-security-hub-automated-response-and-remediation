@@ -138,6 +138,26 @@ export class CisPermissionsStack extends cdk.Stack {
       aws_partition: this.partition
     });
 
+    // //CIS 1.22
+    const cis122_iam = new PolicyStatement();
+    cis122_iam.addActions("iam:GetPolicy")
+    cis122_iam.addActions("iam:ListEntitiesForPolicy")
+    cis122_iam.addActions("iam:DetachUserPolicy")
+    cis122_iam.effect = Effect.ALLOW
+    cis122_iam.addResources(`arn:${this.partition}:iam::${this.account}:policy/*`);
+
+    const cis122Policy = new PolicyDocument();
+    cis122Policy.addStatements(cis122_iam)
+
+    new AssumeRoleConstruct(this, 'cis122assumerole', {
+      adminAccountNumber: adminAccountNumber,
+      solutionId: props.solutionId,
+      lambdaPolicy: cis122Policy,
+      lambdaHandlerName: 'CIS122',
+      region: this.region,
+      aws_partition: this.partition
+    });
+
     // //CIS 2.2
     const cis22 = new PolicyStatement();
     cis22.addActions("cloudtrail:UpdateTrail")
@@ -415,6 +435,62 @@ export class CisPermissionsStack extends cdk.Stack {
             }]
         }
     };
+
+    //CIS 3.1 - 3.14
+    const cis31314cloudtrail1 = new PolicyStatement();
+    cis31314cloudtrail1.addActions("cloudtrail:ListTrails")
+    cis31314cloudtrail1.effect = Effect.ALLOW
+    cis31314cloudtrail1.addResources("*");
+
+    const cis31314cloudtrail2 = new PolicyStatement();
+    cis31314cloudtrail2.addActions("cloudtrail:GetTrail")
+    cis31314cloudtrail2.effect = Effect.ALLOW
+    cis31314cloudtrail2.addResources(
+        "arn:" + this.partition + ":cloudtrail:*:" + this.account + ":trail/*"
+    );
+
+    const cis31314sns1 = new PolicyStatement();
+    cis31314sns1.addActions("sns:CreateTopic")
+    cis31314sns1.effect = Effect.ALLOW
+    cis31314sns1.addResources("*");
+
+    const cis31314sns2 = new PolicyStatement();
+    cis31314sns2.addActions("sns:Subscribe")
+    cis31314sns2.effect = Effect.ALLOW
+    cis31314sns2.addResources(
+      "arn:" + this.partition + ":sns:*:" + this.account + ":*"
+    )
+
+    const cis31314logs = new PolicyStatement();
+    cis31314logs.addActions("logs:PutMetricFilter")
+    cis31314logs.effect = Effect.ALLOW
+    cis31314logs.addResources(
+      "arn:" + this.partition + ":logs:*:" + this.account + ":*"
+    )
+
+    const cis31314cw = new PolicyStatement();
+    cis31314cw.addActions("cloudwatch:PutMetricAlarm")
+    cis31314cw.effect = Effect.ALLOW
+    cis31314cw.addResources(
+      "arn:" + this.partition + ":cloudwatch:*:" + this.account + ":*"
+    )
+
+    const cis31314Policy = new PolicyDocument();
+    cis31314Policy.addStatements(cis31314cloudtrail1)
+    cis31314Policy.addStatements(cis31314cloudtrail2)
+    cis31314Policy.addStatements(cis31314sns1)
+    cis31314Policy.addStatements(cis31314sns2)
+    cis31314Policy.addStatements(cis31314logs)
+    cis31314Policy.addStatements(cis31314cw)
+
+    new AssumeRoleConstruct(this, 'cis31314assumerole', {
+      adminAccountNumber: adminAccountNumber,
+      solutionId: props.solutionId,
+      lambdaPolicy: cis31314Policy,
+      lambdaHandlerName: 'CIS31314',
+      region: this.region,
+      aws_partition: this.partition
+    });
 
     //CIS 4.1 & 4.2
     const cis4142ec2 = new PolicyStatement();
