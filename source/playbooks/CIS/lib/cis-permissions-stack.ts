@@ -138,6 +138,26 @@ export class CisPermissionsStack extends cdk.Stack {
       aws_partition: this.partition
     });
 
+    // //CIS 1.22
+    const cis122_iam = new PolicyStatement();
+    cis122_iam.addActions("iam:GetPolicy")
+    cis122_iam.addActions("iam:ListEntitiesForPolicy")
+    cis122_iam.addActions("iam:DetachUserPolicy")
+    cis122_iam.effect = Effect.ALLOW
+    cis122_iam.addResources(`arn:${this.partition}:iam::${this.account}:policy/*`);
+
+    const cis122Policy = new PolicyDocument();
+    cis122Policy.addStatements(cis122_iam)
+
+    new AssumeRoleConstruct(this, 'cis122assumerole', {
+      adminAccountNumber: adminAccountNumber,
+      solutionId: props.solutionId,
+      lambdaPolicy: cis122Policy,
+      lambdaHandlerName: 'CIS122',
+      region: this.region,
+      aws_partition: this.partition
+    });
+
     // //CIS 2.2
     const cis22 = new PolicyStatement();
     cis22.addActions("cloudtrail:UpdateTrail")

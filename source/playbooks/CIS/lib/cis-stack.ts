@@ -153,6 +153,29 @@ export class CisStack extends cdk.Stack {
     cisPerms.addDependsOn(cis120playbook.lambdaRole.node.findChild('Resource') as CfnRole)
 
     //---------------------------------------------------------------------
+    // CIS122
+    //
+    let cis122findings = [
+      "1.22 – Ensure IAM policies that allow full '*:*' administrative privileges are not created",
+    ];
+
+    const cis122playbook: PlaybookConstruct = new PlaybookConstruct(this, 'cis122playbook', {
+      name: 'CIS122',
+      description: 'Remediates CIS 1.22 by ensuring no IAM policies with administrative privileges',
+      aws_region: this.region,
+      aws_partition: this.partition,
+      aws_accountid: this.account,
+      custom_action_name: 'CIS 1.22',
+      findings: cis122findings,
+      solutionId: props.solutionId,
+      solutionVersion: props.solutionVersion,
+      solutionName: props.solutionName,
+      distName: props.solutionDistName,
+      distBucket: props.solutionDistBucket
+    });
+    cisPerms.addDependsOn(cis122playbook.lambdaRole.node.findChild('Resource') as CfnRole)
+
+    //---------------------------------------------------------------------
     // CIS22
     //
     let cis22findings = [
